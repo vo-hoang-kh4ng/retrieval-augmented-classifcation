@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG RAC NAICS Classifier Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 100px;
+        }
+        textarea:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .prediction {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .confidence {
+            margin-bottom: 15px;
+            color: #666;
+        }
+        .examples {
+            margin-top: 15px;
+        }
+        .example {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border-left: 4px solid #007bff;
+        }
+        .example-label {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .example-score {
+            float: right;
+            color: #666;
+            font-size: 14px;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .sample-queries {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 5px;
+        }
+        .sample-query {
+            cursor: pointer;
+            color: #007bff;
+            text-decoration: underline;
+            margin: 5px 0;
+        }
+        .sample-query:hover {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 RAG RAC NAICS Classifier</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            Classify business descriptions into NAICS industry codes using Retrieval-Augmented Classification
+        </p>
+        
+        <div class="input-group">
+            <label for="queryText">Business Description:</label>
+            <textarea id="queryText" placeholder="Enter a business description to classify (e.g., 'Software development and consulting services')"></textarea>
+        </div>
+        
+        <button id="classifyBtn" onclick="classifyText()">🔍 Classify Business</button>
+        
+        <div id="result" class="result">
+            <div id="resultContent"></div>
+        </div>
+        
+        <div class="sample-queries">
+            <strong>Sample Queries (click to try):</strong>
+            <div class="sample-query" onclick="setQuery('Software development and programming services')">
+                Software development and programming services
+            </div>
+            <div class="sample-query" onclick="setQuery('Restaurant and food delivery service')">
+                Restaurant and food delivery service
+            </div>
+            <div class="sample-query" onclick="setQuery('Online retail clothing store')">
+                Online retail clothing store
+            </div>
+            <div class="sample-query" onclick="setQuery('Management consulting and business strategy')">
+                Management consulting and business strategy
+            </div>
+            <div class="sample-query" onclick="setQuery('Real estate brokerage and property sales')">
+                Real estate brokerage and property sales
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setQuery(query) {
+            document.getElementById('queryText').value = query;
+        }
+        
+        async function classifyText() {
+            const query = document.getElementById('queryText').value.trim();
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            const button = document.getElementById('classifyBtn');
+            
+            if (!query) {
+                alert('Please enter a business description');
+                return;
+            }
+            
+            // Show loading
+            button.disabled = true;
+            button.textContent = '🔄 Classifying...';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultContent.innerHTML = '<div class="loading">Analyzing business description...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/classify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Show success result
+                resultDiv.className = 'result success';
+                resultContent.innerHTML = `
+                    <div class="prediction">
+                        📊 NAICS Code: ${data.prediction}
+                    </div>
+                    <div class="confidence">
+                        🎯 Confidence: ${(data.confidence * 100).toFixed(1)}%
+                    </div>
+                    <div class="examples">
+                        <strong>📝 Similar Examples:</strong>
+                        ${data.examples.map(ex => `
+                            <div class="example">
+                                <span class="example-label">[${ex.label}]</span>
+                                <span class="example-score">${(ex.score * 100).toFixed(1)}%</span>
+                                <div>${ex.text}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+            } catch (error) {
+                // Show error
+                resultDiv.className = 'result error';
+                resultContent.innerHTML = `
+                    <div class="prediction">❌ Classification Failed</div>
+                    <div>Error: ${error.message}</div>
+                    <div style="margin-top: 10px; font-size: 14px;">
+                        Make sure the server is running on http://localhost:8000
+                    </div>
+                `;
+            } finally {
+                // Reset button
+                button.disabled = false;
+                button.textContent = '🔍 Classify Business';
+            }
+        }
+        
+        // Allow Enter key to submit
+        document.getElementById('queryText').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && event.ctrlKey) {
+                classifyText();
+            }
+        });
+    </script>
+</body>
+</html>

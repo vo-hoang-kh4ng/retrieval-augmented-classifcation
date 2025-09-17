@@ -1,0 +1,22 @@
+# Minimal requirements for RAG RAC NAICS pipeline
+# Avoids heavy dependencies that require compilation
+
+# Core dependencies
+requests>=2.32.0
+python-dotenv>=1.0.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+
+# FastAPI for web service
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.5.0
+
+# Testing
+pytest>=7.4.0
+
+# Optional: OpenAI client (lightweight)
+openai>=1.3.0
+
+# Note: ChromaDB and sentence-transformers removed to avoid build issues
+# The pipeline will use in-memory storage and hash-based embeddings as fallback

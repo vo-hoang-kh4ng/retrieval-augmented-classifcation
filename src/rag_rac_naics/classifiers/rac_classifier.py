@@ -1,4 +1,4 @@
-﻿"""RAC (Retrieval-Augmented Classification) Core.
+"""RAC (Retrieval-Augmented Classification) Core.
 
 Embeddings strategy:
 - Try OpenAI embeddings via REST when OPENAI_API_KEY is present
@@ -41,9 +41,13 @@ class RACClassifier:
         query_embedding = self._get_embeddings([text])[0]
         
         # Retrieve similar examples
-        similar_texts, similar_labels, scores = self.vector_store.search(
+        similar_texts, metadatas, scores = self.vector_store.search(
             query_embedding, k=self.k
         )
+        # Extract labels from metadatas (VectorStore stores labels under metadata['label'])
+        similar_labels = [
+            (md.get("label") if isinstance(md, dict) else None) for md in metadatas
+        ]
         
         if use_llm:
             # Use LLM to classify based on retrieved examples
