@@ -1,0 +1,33 @@
+﻿# Configuration files
+# config/prompts.yaml
+domain_classification: |
+  You are a domain classifier. Determine if the following query is relevant to our knowledge base.
+  
+  Query: {query}
+  
+  Respond with either "IN_DOMAIN" or "OUT_OF_DOMAIN".
+  
+  IN_DOMAIN: Query is relevant and can be answered using our knowledge base.
+  OUT_OF_DOMAIN: Query is not relevant or cannot be answered using our knowledge base.
+
+rac_classification: |
+  You are a classifier. Use the following examples to classify the input text.
+  
+  Classes: {classes}
+  
+  Examples:
+  {examples}
+  
+  Input: {input}
+  
+  Choose the most appropriate class. If uncertain, respond with "UNKNOWN".
+
+naics_classification: |
+  You are a NAICS code classifier. Select the most appropriate NAICS code from the given options.
+  
+  Query: {query}
+  
+  Options:
+  {options}
+  
+  Respond with the most appropriate NAICS code. If none match well, respond with "UNKNOWN".
